@@ -12,6 +12,8 @@
 #include <QWidget>
 #include <QLabel>
 #include <QMessageBox>
+#include <QBoxLayout>
+#include "themewidget.h"
 
 class MainWindow : public QWidget//
 {
@@ -19,7 +21,7 @@ class MainWindow : public QWidget//
 private slots:
 
     void on_selectionChangedSlot(const QItemSelection &selected, const QItemSelection &deselected);
-    void on_select_comboboxOnChangedSlot(const int index);
+    //void on_select_comboboxOnChangedSlot(const int index);
 
 public:
     MainWindow(QWidget *parent = 0);
@@ -33,6 +35,9 @@ private:
     QCheckBox *checkbox;
     QComboBox *combobox;
     QLabel *label, *label_path;
+    ThemeWidget *themeWidget;
+    QVBoxLayout *tableLayout;
+    QHBoxLayout *tableButtonLayout;
 };
 
 #endif // MAINWINDOW_H
