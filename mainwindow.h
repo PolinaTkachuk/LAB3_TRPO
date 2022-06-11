@@ -2,36 +2,37 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QWidget>
 #include <QFileSystemModel>
 #include <QTreeView>
-#include <QListView>
-#include <QSplitter>
 #include <QTableView>
-#include <QMainWindow>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QWidget>
+#include <QLabel>
+#include <QMessageBox>
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
-
-class MainWindow : public QMainWindow
+class MainWindow : public QWidget//
 {
     Q_OBJECT
 private slots:
 
     void on_selectionChangedSlot(const QItemSelection &selected, const QItemSelection &deselected);
+    void on_select_comboboxOnChangedSlot(const int index);
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
 private:
-
-    QTableView *tableView;
-
-    Ui::MainWindow *ui;
-    QFileSystemModel *fileModel;//объект класса QFileSystemModel для работы с папками
-    QTreeView *listView;//вид- список папок
+    QFileSystemModel *fileModel;
     QFileSystemModel *dirModel;
-    QTreeView *treeView;//вид- дерево папок
+    QTreeView *treeView;
+    QTableView *tableView;
+    QPushButton *btnPrint;
+    QCheckBox *checkbox;
+    QComboBox *combobox;
+    QLabel *label, *label_path;
 };
+
 #endif // MAINWINDOW_H
