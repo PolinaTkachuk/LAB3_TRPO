@@ -95,46 +95,6 @@ DataTable ThemeWidget::generateRandomData(int listCount, int valueMax, int value
         dataTable << dataList;
     }
 
-    /*
-    DataTable dataTable;
-
-    QSqlDatabase sdb = QSqlDatabase::addDatabase("QSQLITE");
-    sdb.setDatabaseName("BLOOD_SUGAR.sqlite");
-    if (sdb.open())
-    {
-        qDebug() << "BD open\n";
-        QSqlQuery query("SELECT VALUE FROM BLOOD_SUGAR", sdb);
-        int index = 0;
-        DataList dataList;
-        while (query.next() && (index < 10))
-        {
-            QString temp = query.value(0).toString();
-            QPointF value(temp, index);
-
-            dataList << Data(value, "BLOOD_SUGAR");
-
-            index++;
-        }
-        dataTable << dataList;
-    }
-    else
-    {
-        qDebug() << "BD not open\n";
-    }
-
-    for (int i(0); i < listCount; i++) {
-        DataList dataList;
-        qreal yValue(0);
-        for (int j(0); j < valueCount; j++) {
-            yValue = yValue + (qreal)(qrand() % valueMax) / (qreal) valueCount;
-            QPointF value((j + (qreal) rand() / (qreal) RAND_MAX) * ((qreal) m_valueMax / (qreal) valueCount),
-                          yValue);
-            QString label = "Slice " + QString::number(i) + ":" + QString::number(j);
-            dataList << Data(value, label);
-        }
-        dataTable << dataList;
-    }
-*/
 
     return dataTable;
 }
@@ -151,6 +111,7 @@ QComboBox *ThemeWidget::AddTypeCharts() const
     themeComboBox->addItem("Scatter", TypeThemeWidget::Scatter);
     return themeComboBox;
 }
+
 
 QChart *ThemeWidget::createAreaChart() const
 {
@@ -172,8 +133,22 @@ QChart *ThemeWidget::createAreaChart() const
                 upperSeries->append(QPointF(j, data.first.y()));
             }
         }
+
         QAreaSeries *area = new QAreaSeries(upperSeries, lowerSeries);
         area->setName(name + QString::number(nameIndex));
+
+        //isDown() определяет нажата ли кнопка.в нашем случае чекбокс черно-белый
+        //для каждого типа графика задаем относительно чексбокса цвет
+        if(BlackWhiteCheck->isDown())
+        {
+             //устанавливаем линейный градиент черно-белый
+            QLinearGradient gradient(0, 0, this->width(), this->height());
+            gradient.setColorAt(0, Qt::black);
+            gradient.setColorAt(1, Qt::white);
+//Класс QLinearGradient используется с QBrush для указания кисти с линейным градиентом.
+            QBrush brush(gradient);
+            area->setBrush(brush);
+        }
 
         nameIndex++;
         chart->addSeries(area);
@@ -186,16 +161,28 @@ QChart *ThemeWidget::createAreaChart() const
 
 QChart *ThemeWidget::createBarChart() const
 {
-    QChart *chart = new QChart();
-    chart->setTitle("Bar chart");
+    QChart *chart = new QChart();//создаем объект-график
+    chart->setTitle("Bar chart"); //указываем тип- столбачая диаграмма
 
     QStackedBarSeries *series = new QStackedBarSeries(chart);
-    for (int i(0); i < m_dataTable.count(); i++) {
+    for (int i(0); i < m_dataTable.count(); i++)
+    {
         QBarSet *set = new QBarSet("Bar set " + QString::number(i));
         for (const Data &data : m_dataTable[i])
             *set << data.first.y();
+    //isDown() определяет нажата ли кнопка.в нашем случае чекбокс черно-белый
+    //для каждого типа графика задаем относительно чексбокса цвет
+    if(BlackWhiteCheck->isDown()){
+         //устанавливаем линейный градиент черно-белый
+        QLinearGradient gradient(0, 0, this->width(), this->height());
+        gradient.setColorAt(0, Qt::black);
+        gradient.setColorAt(1, Qt::white);
 
-        series->append(set);
+        //Класс QLinearGradient используется с QBrush для указания кисти с линейным градиентом.
+        QBrush brush(gradient);
+        set->setBrush(brush);
+       }
+     series->append(set);
     }
     chart->addSeries(series);
     chart->createDefaultAxes();
@@ -215,7 +202,12 @@ QChart *ThemeWidget::createLineChart() const
         for (const Data &data : list)
             series->append(data.first);
         series->setName(name + QString::number(nameIndex));
-
+        if (BlackWhiteCheck->isDown())
+        {
+            //для грфика линии черно белый вариант- это установить цвет линии черным при помощь карандаша
+            QPen pen(Qt::black);
+            series->setPen(pen);
+        }
         nameIndex++;
         chart->addSeries(series);
     }
@@ -238,6 +230,18 @@ QChart *ThemeWidget::createPieChart() const
             if (data == m_dataTable[i].first()) {
                 slice->setLabelVisible();
                 slice->setExploded();
+            }
+            if (BlackWhiteCheck->isDown())
+            {
+               //QConicalGradient::QConicalGradient(qreal cx, qreal cy, qreal angle)
+                //Интерполировать цвета вокруг центральной точки (QConicalGradient)- круговой
+                QConicalGradient gradient( chartView->height(), chartView->width(),360);
+               // QLinearGradient gradient(0, 0, chartView->height(), chartView->width());
+                gradient.setColorAt(0, Qt::black);
+                gradient.setColorAt(1, Qt::white);
+
+                QBrush brush(gradient);
+                slice->setBrush(brush);
             }
         }
         qreal hPos = (pieSize / 2) + (i / (qreal) m_dataTable.count());
@@ -262,6 +266,12 @@ QChart *ThemeWidget::createSplineChart() const
         for (const Data &data : list)
             series->append(data.first);
         series->setName(name + QString::number(nameIndex));
+        if (BlackWhiteCheck->isDown())
+        {
+            //для диаграмм в виде линий используем карандаш черного цвета
+            QPen pen(Qt::black);
+            series->setPen(pen);
+        }
 
         nameIndex++;
         chart->addSeries(series);
@@ -283,6 +293,20 @@ QChart *ThemeWidget::createScatterChart() const
             series->append(data.first);
         series->setName(name + QString::number(nameIndex));
 
+
+        //isDown() определяет нажата ли кнопка.в нашем случае чекбокс черно-белый
+        //для каждого типа графика задаем относительно чексбокса цвет
+        if(BlackWhiteCheck->isDown())
+        {
+             //устанавливаем линейный градиент черно-белый
+            QLinearGradient gradient(0, 0, this->width(), this->height());
+            gradient.setColorAt(0, Qt::black);
+            gradient.setColorAt(1, Qt::white);
+
+            QBrush brush(gradient);
+            series->setBrush(brush);
+        }
+
         nameIndex++;
         chart->addSeries(series);
     }
@@ -290,51 +314,37 @@ QChart *ThemeWidget::createScatterChart() const
     return chart;
 }
 
+/*
 void ThemeWidget::updateUI()
 {
+
     TypeThemeWidget typeChart_ = static_cast<TypeThemeWidget>(
                 typeChart->itemData( typeChart->currentIndex()).toInt());
 
-    switch (typeChart_)
-    {
-    case TypeThemeWidget::Area :
-        chartView->setChart(createAreaChart());
-        break;
-    case TypeThemeWidget::Bar :
-        chartView->setChart(createBarChart());
-        break;
-    case TypeThemeWidget::Line :
-        chartView->setChart(createLineChart());
-        break;
-    case TypeThemeWidget::Pie :
-        chartView->setChart(createPieChart());
-        break;
-    case TypeThemeWidget::Spline :
-        chartView->setChart(createSplineChart());
-        break;
-    case TypeThemeWidget::Scatter :
-        chartView->setChart(createScatterChart());
-        break;
-    }
-
-//    QBrush brush;
-//    if (m_notColoredCheckBox->isChecked()) {
-//        QRadialGradient gradient(50, 50, 50, 50, 50);
-//        gradient.setColorAt(0, QColor::fromRgbF(0, 1, 0, 1));
-//        gradient.setColorAt(1, QColor::fromRgbF(0, 0, 0, 0));
-
-//        brush = QBrush(gradient);
-//    }
-//    else
-//    {
-//        QRadialGradient gradient(50, 50, 50, 50, 50);
-//        gradient.setColorAt(0, QColor::fromRgbF(0, 0, 1, 1));
-//        gradient.setColorAt(1, QColor::fromRgbF(0, 0, 0, 0));
-
-//        brush = QBrush(gradient);
-//    }
-
-
-    //chartView->chart()->Series["Series 0"];
+    //isDown() определяет нажата ли кнопка.в нашем случае чекбокс черно-белый
+     //для каждого типа графика задаем относительно чексбокса цвет
+     if (typeChart_==TypeThemeWidget::Area)
+         chartView->setChart(createAreaChart(BlackWhiteCheck->isDown()));
+     else if(typeChart_==TypeThemeWidget::Bar)
+     {
+          chartView->setChart(createBarChart(BlackWhiteCheck->isDown()));
+     }
+     else if(typeChart_==TypeThemeWidget::Pie)
+     {
+          chartView->setChart(createPieChart(BlackWhiteCheck->isDown()));
+     }
+     else if(typeChart_==TypeThemeWidget::Line)
+     {
+         chartView->setChart(createLineChart(BlackWhiteCheck->isDown()));
+     }
+     else if(typeChart_==TypeThemeWidget::Spline)
+     {
+         chartView->setChart(createSplineChart(BlackWhiteCheck->isDown()));
+     }
+     else if(typeChart_==TypeThemeWidget::Scatter)
+     {
+         chartView->setChart(createScatterChart(BlackWhiteCheck->isDown()));
+     }
 
 }
+*/

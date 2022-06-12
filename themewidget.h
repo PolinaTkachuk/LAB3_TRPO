@@ -77,14 +77,14 @@ public:
     ~ThemeWidget();
 
 private Q_SLOTS:
-    void updateUI();
+    void updateUI(){}
      void openFileDialogWindow();
 private:
     DataTable generateRandomData(int listCount, int valueMax, int valueCount) const;
     QComboBox *AddTypeCharts() const;//определяет тип графика из выпадающего списка
     void connectSignals();
 public:
-    //создание графиков разных типов
+    //создание графиков разных типов, цвет определяем внутри
     QChart *createAreaChart() const;
     QChart *createBarChart() const;
     QChart *createPieChart() const;
@@ -92,11 +92,13 @@ public:
     QChart *createSplineChart() const;
     QChart *createScatterChart() const;
 
+
 private:
     int m_listCount;
     int m_valueMax;
     int m_valueCount;
 
+    bool checkColor_=false;
     DataTable m_dataTable; //табличное представление
     QComboBox *typeChart; //список- тип графика
     QCheckBox *BlackWhiteCheck; //чекбокс черно-белый
