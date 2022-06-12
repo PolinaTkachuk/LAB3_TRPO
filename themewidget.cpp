@@ -46,16 +46,17 @@ void ThemeWidget::connectSignals()
     connect(typeChart,
             static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &ThemeWidget::updateUI);
-    connect(BlackWhiteCheck, &QCheckBox::toggled, this, &ThemeWidget::updateUI);
+    //connect(BlackWhiteCheck, &QCheckBox::toggled, this, &ThemeWidget::updateUI);
+    //при нажатии на кнопку- печать графика
     connect(printChart, SIGNAL(clicked()), this, SLOT(openFileDialogWindow()));
 }
 
 void ThemeWidget::openFileDialogWindow()
 {
     QFileDialog *fileDialog = new QFileDialog(this);
-             // определить заголовок файла
+     // заголовок файла
     fileDialog-> setWindowTitle (tr ("Открыть изображение"));
-             // Установить путь к файлу по умолчанию
+    //путь к файлу определяем по умолчанию
     fileDialog->setDirectory(".");
              // Установить фильтр файлов, только файлы бд и json-данные
     fileDialog->setNameFilter(tr("Images(*.sqlite *.json)"));
@@ -98,6 +99,47 @@ DataTable ThemeWidget::generateRandomData(int listCount, int valueMax, int value
 
     return dataTable;
 }
+
+QSqlTableModel ThemeWidget::generateDataBase(int listCount, int valueMax, int valueCount) const
+{
+      QSqlTableModel *model_db;
+
+      //ДОБАВЛЕНИЕ БД ИСХОДНОЙ
+      QSqlDatabase  db=QSqlDatabase::addDatabase("QSQLITE");
+      db.setDatabaseName("./dbase.BLOOD_SUGAR.sqlite");
+      //db.setDatabaseName(".sqlite");
+        if(db.open())
+        {
+             //выводим об успешносм открытие сообщение
+
+            model_db->setTable(".sqlite");
+            model_db->select();//запрос данных вызвать select(), чтобы заполнить модель данными.
+
+            //bool QSqlTableModel::select ()   [virtual]
+           // Заполняет модель данными из таблицы, установленной с помощью setTable(),
+           //используя специальный фильтр и сортировку, при успехе возвращает true; в противном случае возвращает false.
+
+            //За отображение таблиц в Qt отвечает класс QTableView, объект которого
+            //необходимо связать с моделью при помощи метода QTableView::setModel.
+            QTableView* view;// вид
+
+            view->setModel(model_db);
+            view->show();
+
+            //return app.exec();
+
+        }
+        else
+        {
+            //"Ошибка подключения к БД: "
+            qDebug() << db.lastError().text();
+             //ui->statusbar->showMessage("Ошибка подключения к БД: "+ db.lastError().databaseText());
+        }
+
+   return dataTable;
+
+}
+
 
 QComboBox *ThemeWidget::AddTypeCharts() const
 {
@@ -314,37 +356,37 @@ QChart *ThemeWidget::createScatterChart() const
     return chart;
 }
 
-/*
+
 void ThemeWidget::updateUI()
 {
 
     TypeThemeWidget typeChart_ = static_cast<TypeThemeWidget>(
                 typeChart->itemData( typeChart->currentIndex()).toInt());
 
-    //isDown() определяет нажата ли кнопка.в нашем случае чекбокс черно-белый
-     //для каждого типа графика задаем относительно чексбокса цвет
+    //строим графики исходя из типа
+
      if (typeChart_==TypeThemeWidget::Area)
-         chartView->setChart(createAreaChart(BlackWhiteCheck->isDown()));
+         chartView->setChart(createAreaChart());
      else if(typeChart_==TypeThemeWidget::Bar)
      {
-          chartView->setChart(createBarChart(BlackWhiteCheck->isDown()));
+          chartView->setChart(createBarChart());
      }
      else if(typeChart_==TypeThemeWidget::Pie)
      {
-          chartView->setChart(createPieChart(BlackWhiteCheck->isDown()));
+          chartView->setChart(createPieChart());
      }
      else if(typeChart_==TypeThemeWidget::Line)
      {
-         chartView->setChart(createLineChart(BlackWhiteCheck->isDown()));
+         chartView->setChart(createLineChart());
      }
      else if(typeChart_==TypeThemeWidget::Spline)
      {
-         chartView->setChart(createSplineChart(BlackWhiteCheck->isDown()));
+         chartView->setChart(createSplineChart());
      }
      else if(typeChart_==TypeThemeWidget::Scatter)
      {
-         chartView->setChart(createScatterChart(BlackWhiteCheck->isDown()));
+         chartView->setChart(createScatterChart());
      }
 
 }
-*/
+
