@@ -4,7 +4,7 @@ ThemeWidget::ThemeWidget(QWidget *parent) :
     m_listCount(3), //кол-во графиков
     m_valueMax(10), //максимальное значение
     m_valueCount(7),
-    m_dataTable(generateRandomData(m_listCount, m_valueMax, m_valueCount)),
+    //new_dataTable(generateDataBase(QString& filePath) const),//графики строятся на основе данных бд
     typeChart(AddTypeCharts()),//задаем выпадающий список из разных типов графиков
     BlackWhiteCheck(new QCheckBox("Черно-белый график")),//задаем чекбокс
     printChart(new QPushButton("Печать графика")) //задаем кнопку печати
@@ -46,7 +46,7 @@ void ThemeWidget::connectSignals()
     connect(typeChart,
             static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             this, &ThemeWidget::updateUI);
-    //connect(BlackWhiteCheck, &QCheckBox::toggled, this, &ThemeWidget::updateUI);
+    connect(BlackWhiteCheck, &QCheckBox::toggled, this, &ThemeWidget::updateUI);
     //при нажатии на кнопку- печать графика
     connect(printChart, SIGNAL(clicked()), this, SLOT(openFileDialogWindow()));
 }
@@ -70,11 +70,25 @@ void ThemeWidget::openFileDialogWindow()
     {
         fileNames = fileDialog->selectedFiles();
     }
-    //for(auto tmp:fileNames)
-        //qDebug()<<tmp<<endl;
+
+
+    QPdfWriter writer_(fileNames[0] + ".pdf");//сохраняем в формате пдф
+
+    writer_.setPageSize(QPageSize::A4);//размер страницы А4
+
+    writer_.setResolution (300);//разрешение бумаги на 300, чтобы пиксель был 3508 * 2479
+    // Добавляем контент с помощью QPainter
+    QPainter painter(&writer_);
+
+    //Отрисовка
+    chart->ReturnchartView()->render(&painter);
+    painter.end();
+
+
+
 }
 
-
+/*
 DataTable ThemeWidget::generateRandomData(int listCount, int valueMax, int valueCount) const
 {
     DataTable dataTable;
@@ -99,36 +113,54 @@ DataTable ThemeWidget::generateRandomData(int listCount, int valueMax, int value
 
     return dataTable;
 }
-
-QSqlTableModel ThemeWidget::generateDataBase(int listCount, int valueMax, int valueCount) const
+*/
+        //график строиться на основе данных бд, передаем в аргументе путь
+DataTable ThemeWidget::generateDataBase(QString& filePath) const
 {
-      QSqlTableModel *model_db;
+      //QSqlTableModel *model_db; //создаем модель бд
+      QString name_ = filePath;
+      DataList dataList;
+      DataTable new_dataTable;
 
       //ДОБАВЛЕНИЕ БД ИСХОДНОЙ
-      QSqlDatabase  db=QSqlDatabase::addDatabase("QSQLITE");
-      db.setDatabaseName("./dbase.BLOOD_SUGAR.sqlite");
-      //db.setDatabaseName(".sqlite");
-        if(db.open())
+      QSqlDatabase  db=QSqlDatabase::addDatabase("QSQLITE");//указываем тип бд
+      db.setConnectOptions("QSQLITE_OPEN_READONLY=1");//Возвращает строку используемых опций соединения.
+      db.setDatabaseName(filePath);//полное имя базы данных (зависит от того, на какую мы нажали- передали в аргументе)
+      //db.setDatabaseName("./dbase.BLOOD_SUGAR.sqlite");
+
+        if(db.open())//проверка на успешное открытие бд
         {
-             //выводим об успешносм открытие сообщение
+            qDebug() << " База данных успешно открылась\n";//выводим об успешносм открытие сообщение
 
-            model_db->setTable(".sqlite");
-            model_db->select();//запрос данных вызвать select(), чтобы заполнить модель данными.
+            //чтобы работать с данными бд, необходимо в имени бд убрать все символы начиная с начала до слеша
+            //а также после точки , то есть оставить только название.
+  //remove ( int position, int n )Удаляет n символов из строки, начиная с позиции с индексом position,возвращает ссылку на строку.
+            name_.remove(0,name_.lastIndexOf('/') + 1);
+            int dif= name_.size() - name_.indexOf('.');
+            name_.remove(name_.indexOf('.'),dif);
 
-            //bool QSqlTableModel::select ()   [virtual]
-           // Заполняет модель данными из таблицы, установленной с помощью setTable(),
-           //используя специальный фильтр и сортировку, при успехе возвращает true; в противном случае возвращает false.
 
-            //За отображение таблиц в Qt отвечает класс QTableView, объект которого
-            //необходимо связать с моделью при помощи метода QTableView::setModel.
-            QTableView* view;// вид
+            //делаем селект к выбранной базе данных с корректным кратким  именем
+            QSqlQuery query("SELECT VALUE, TIME FROM " + name_, db);
+            int i= 0;
+            while (query.next())//проходим по всем данным бд
+            {
+                //значение 1го столбца и 2го
+                float tempVal = query.value(0).toFloat();
+                QString tempDate = query.value(1).toString();
+                //фиксируем для графика
+                QPointF value(i, tempVal);
 
-            view->setModel(model_db);
-            view->show();
+                //заносим в даталист
+                dataList << Data(value, tempDate);
 
-            //return app.exec();
+                //идем дальше
+                i++;
+            }
 
+            new_dataTable << dataList;//храним данные в дататейбл
         }
+
         else
         {
             //"Ошибка подключения к БД: "
@@ -136,7 +168,7 @@ QSqlTableModel ThemeWidget::generateDataBase(int listCount, int valueMax, int va
              //ui->statusbar->showMessage("Ошибка подключения к БД: "+ db.lastError().databaseText());
         }
 
-   return dataTable;
+   return new_dataTable;//возвращаем данные
 
 }
 
@@ -164,10 +196,10 @@ QChart *ThemeWidget::createAreaChart() const
     QLineSeries *lowerSeries = nullptr;
     QString name("Series ");
     int nameIndex = 0;
-    for (int i(0); i < m_dataTable.count(); i++) {
+    for (int i(0); i <new_dataTable.count(); i++) {
         QLineSeries *upperSeries = new QLineSeries(chart);
-        for (int j(0); j < m_dataTable[i].count(); j++) {
-            Data data = m_dataTable[i].at(j);
+        for (int j(0); j < new_dataTable[i].count(); j++) {
+            Data data =new_dataTable[i].at(j);
             if (lowerSeries) {
                 const QVector<QPointF>& points = lowerSeries->pointsVector();
                 upperSeries->append(QPointF(j, points[i].y() + data.first.y()));
@@ -207,10 +239,10 @@ QChart *ThemeWidget::createBarChart() const
     chart->setTitle("Bar chart"); //указываем тип- столбачая диаграмма
 
     QStackedBarSeries *series = new QStackedBarSeries(chart);
-    for (int i(0); i < m_dataTable.count(); i++)
+    for (int i(0); i < new_dataTable.count(); i++)
     {
         QBarSet *set = new QBarSet("Bar set " + QString::number(i));
-        for (const Data &data : m_dataTable[i])
+        for (const Data &data :new_dataTable[i])
             *set << data.first.y();
     //isDown() определяет нажата ли кнопка.в нашем случае чекбокс черно-белый
     //для каждого типа графика задаем относительно чексбокса цвет
@@ -239,7 +271,7 @@ QChart *ThemeWidget::createLineChart() const
 
     QString name("Series ");
     int nameIndex = 0;
-    for (const DataList &list : m_dataTable) {
+    for (const DataList &list :new_dataTable) {
         QLineSeries *series = new QLineSeries(chart);
         for (const Data &data : list)
             series->append(data.first);
@@ -264,12 +296,12 @@ QChart *ThemeWidget::createPieChart() const
     QChart *chart = new QChart();
     chart->setTitle("Pie chart");
 
-    qreal pieSize = 1.0 / m_dataTable.count();
-    for (int i = 0; i < m_dataTable.count(); i++) {
+    qreal pieSize = 1.0 /new_dataTable.count();
+    for (int i = 0; i <new_dataTable.count(); i++) {
         QPieSeries *series = new QPieSeries(chart);
-        for (const Data &data : m_dataTable[i]) {
+        for (const Data &data :new_dataTable[i]) {
             QPieSlice *slice = series->append(data.second, data.first.y());
-            if (data == m_dataTable[i].first()) {
+            if (data ==new_dataTable[i].first()) {
                 slice->setLabelVisible();
                 slice->setExploded();
             }
@@ -286,7 +318,7 @@ QChart *ThemeWidget::createPieChart() const
                 slice->setBrush(brush);
             }
         }
-        qreal hPos = (pieSize / 2) + (i / (qreal) m_dataTable.count());
+        qreal hPos = (pieSize / 2) + (i / (qreal)new_dataTable.count());
         series->setPieSize(pieSize);
         series->setHorizontalPosition(hPos);
         series->setVerticalPosition(0.5);
@@ -303,7 +335,7 @@ QChart *ThemeWidget::createSplineChart() const
     chart->setTitle("Spline chart");
     QString name("Series ");
     int nameIndex = 0;
-    for (const DataList &list : m_dataTable) {
+    for (const DataList &list : new_dataTable) {
         QSplineSeries *series = new QSplineSeries(chart);
         for (const Data &data : list)
             series->append(data.first);
@@ -329,7 +361,7 @@ QChart *ThemeWidget::createScatterChart() const
     chart->setTitle("Scatter chart");
     QString name("Series ");
     int nameIndex = 0;
-    for (const DataList &list : m_dataTable) {
+    for (const DataList &list :new_dataTable) {
         QScatterSeries *series = new QScatterSeries(chart);
         for (const Data &data : list)
             series->append(data.first);
