@@ -31,6 +31,7 @@
 #include<QChartGlobal>
 #include <QtSql>
 #include<QTableView>
+#include<QString>
 
 QT_BEGIN_NAMESPACE
 class QComboBox;
@@ -85,9 +86,9 @@ private Q_SLOTS:
      void openFileDialogWindow();//функция использующаяся в сигалы-слоты для печати графиков
 private:
    // строит графики на рандомных данных
-    DataTable generateRandomData(int listCount, int valueMax, int valueCount) const;
+    //DataTable generateRandomData(int listCount, int valueMax, int valueCount) const;
     //строит графики на данных из бд
-    QSqlTableModel generateDataBase(int listCount, int valueMax, int valueCount) const;
+    DataTable generateDataBase(QString& filePath) const;
     QComboBox *AddTypeCharts() const;//определяет тип графика из выпадающего списка
     void connectSignals();
 public:
@@ -104,9 +105,10 @@ private:
     int m_listCount;
     int m_valueMax;
     int m_valueCount;
+    QString filePath=" ";
 
     bool checkColor_=false;
-    DataTable m_dataTable; //табличное представление
+    DataTable new_dataTable; //табличное представление
     QComboBox *typeChart; //список- тип графика
     QCheckBox *BlackWhiteCheck; //чекбокс черно-белый
     QPushButton *printChart;//кнопка печати
