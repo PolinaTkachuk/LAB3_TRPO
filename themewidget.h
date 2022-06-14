@@ -32,6 +32,12 @@
 #include <QtSql>
 #include<QTableView>
 #include<QString>
+#include <QFileDialog>
+#include <QPdfWriter>
+#include <QtPrintSupport/QPrinter>
+#include <QPainter>
+#include <QTextOption>
+#include<QPagedPaintDevice>
 
 QT_BEGIN_NAMESPACE
 class QComboBox;
@@ -100,12 +106,15 @@ public:
     QChart *createSplineChart() const;
     QChart *createScatterChart() const;
 
+     QChartView* ReturnchartView() { return chartView; };
 
 private:
     int m_listCount;
     int m_valueMax;
     int m_valueCount;
     QString filePath=" ";
+
+    ThemeWidget *chart;
 
     bool checkColor_=false;
     DataTable new_dataTable; //табличное представление

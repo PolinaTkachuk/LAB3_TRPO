@@ -70,8 +70,22 @@ void ThemeWidget::openFileDialogWindow()
     {
         fileNames = fileDialog->selectedFiles();
     }
-    //for(auto tmp:fileNames)
-        //qDebug()<<tmp<<endl;
+
+
+    QPdfWriter writer_(fileNames[0] + ".pdf");//сохраняем в формате пдф
+
+    writer_.setPageSize(QPageSize::A4);//размер страницы А4
+
+    writer_.setResolution (300);//разрешение бумаги на 300, чтобы пиксель был 3508 * 2479
+    // Добавляем контент с помощью QPainter
+    QPainter painter(&writer_);
+
+    //Отрисовка
+    chart->ReturnchartView()->render(&painter);
+    painter.end();
+
+
+
 }
 
 /*
